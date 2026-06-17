@@ -1,6 +1,6 @@
 # ZEBES EMULATOR
 
-[![Linux build & test](https://github.com/Arnaud-Le-Cossec/zebes-emulator/actions/workflows/cmake-linux.yml/badge.svg)](https://github.com/Arnaud-Le-Cossec/zebes-emulator/actions/workflows/cmake-linux.yml)
+[![Build and test for Linux](https://github.com/Arnaud-Le-Cossec/zebes-nes-emulator/actions/workflows/cmake-linux.yml/badge.svg)](https://github.com/Arnaud-Le-Cossec/zebes-nes-emulator/actions/workflows/cmake-linux.yml)
 
 A zimple NES emulator, written in C
 
