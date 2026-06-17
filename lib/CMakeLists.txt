@@ -1,0 +1,1 @@
+add_subdirectory(z6502-cpu-core)
