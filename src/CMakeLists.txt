@@ -1,6 +1,7 @@
 
 add_executable(z6502_emulator
     emulator_utility.c
+    clock_driver.c
     main.c
     # Add other source files here
 )

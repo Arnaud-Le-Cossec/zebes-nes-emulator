@@ -1,7 +1,7 @@
 /*                       
-     _____ ___ ___ ___ ___ 
-    |__   |  _|  _|   |_  |     Z6502 CPU Emulator
-    |   __| . |_  | | |  _|     Copyright (C) 2026 - Arnaud LE COSSEC
+     _____ ___ _   ___ ___ 
+    |__   |  _| |_|  _|  _|     ZEBES NES Emulator
+    |   __|  _| . |  _|_  |     Copyright (C) 2026 - Arnaud LE COSSEC
     |_____|___|___|___|___|     version 1.0.0
                        
     This program is free software; you can redistribute it and/or modify
@@ -16,30 +16,24 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "emulator_utility.h"
+#include "clock_driver.h"
 #include "z6502.h"
 
 int main(int argc,char ** argv) {
     int opt;
     int verbose_flag = 0;
     int json_flag = 0;
-    int stop_on_brk = 1; //Default: stop on BRK instruction
     int step_mode = 0;
     int clock_frequency = 1; //Default 1Hz
 
     /*Parse command line options*/
-    while ((opt = getopt(argc, argv, "vjbBsf:")) != -1) {
+    while ((opt = getopt(argc, argv, "vjsf:")) != -1) {
         switch (opt) {
             case 'v':
                 verbose_flag = 1;
                 break;
             case 'j':
                 json_flag = 1;
-                break;
-            case 'b':
-                stop_on_brk = 1;
-                break;
-            case 'B':
-                stop_on_brk = 0;
                 break;
             case 's':
                 step_mode = 1;
@@ -85,6 +79,13 @@ int main(int argc,char ** argv) {
         exit(EXIT_FAILURE);
     }
 
+    /*Clock setup*/
+    clock_t cpu_clock_s;
+    clock_init(&cpu_clock_s, NTSC_CPU_MASTER_CLOCK_DIVIDER);
+
+    clock_t ppu_clock_s;
+    clock_init(&ppu_clock_s, NTSC_PPU_MASTER_CLOCK_DIVIDER);
+
     /*Create components*/
     z6502_cpu_t cpu_s;
     z6502_init(&cpu_s, memory_space);
@@ -96,11 +97,22 @@ int main(int argc,char ** argv) {
     while(1){
 
 
-        if (z6502_step(&cpu_s) != 0){
-            fprintf(stderr, "[CRITICAL] Unhandled opcode 0x%02X at address 0x%04X\n", cpu_s.ir_opcode, cpu_s.ir_addr);
-            free(memory_space);
-            exit(EXIT_FAILURE);
+        if(clock_check(&cpu_clock_s)){
+            if (z6502_step(&cpu_s) != 0){
+                fprintf(stderr, "[CRITICAL] Unhandled opcode 0x%02X at address 0x%04X\n", cpu_s.ir_opcode, cpu_s.ir_addr);
+                free(memory_space);
+                exit(EXIT_FAILURE);
+            }
+            clock_skip(&cpu_clock_s, cpu_s.ir_cycles);
         }
+
+        if(clock_check(&ppu_clock_s)){
+            //PPU step
+        }
+
+
+
+        
         
 
         if(verbose_flag){
@@ -114,12 +126,6 @@ int main(int argc,char ** argv) {
         }
         else{
             if(clock_frequency > 0) usleep(1000000 / clock_frequency);
-        }
-
-        /*Check for BRK instruction*/
-        if(stop_on_brk && cpu_s.reg.processor_status.break_flg == 1U){
-            printf("BRK flag set. Stopping execution.\n");
-            break;
         }
 
     }
